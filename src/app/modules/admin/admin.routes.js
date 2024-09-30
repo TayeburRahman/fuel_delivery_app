@@ -5,55 +5,102 @@ const { uploadFile } = require("../../middlewares/fileUploader");
 const { AdminController } = require("../admin/admin.controller");
 
 const router = express.Router();
-//! Admin Authentication Start
-router.post("/auth/register", AdminController.registrationUser);
-router.post("/auth/login", AdminController.login);
-// --------------
-router.post("/auth/refresh-token", AdminController.refreshToken);
-router.post("/auth/forgot-password", AdminController.forgotPass);
-router.post(
-  "/auth/verify-otp",
-  AdminController.checkIsValidForgetActivationCode
-);
-router.post("/auth/reset-password", AdminController.resetPassword);
-router.patch(
-  "/auth/change-password",
-  auth(ENUM_USER_ROLE.ADMIN),
-  AdminController.changePassword
-);
-router.post(
-  "/auth/add-admin",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  AdminController.registrationUser
-);
-
-router.get(
-  "/auth/admins",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  AdminController.getAllAdmin
-);
-router.post(
-  "/auth/add-user",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  AdminController.createUser
-);
-
+ 
 //! Admin Update
 router.patch(
-  "/auth/edit-profile/:id",
+  "/edit-profile/:id",
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   uploadFile(),
-  AdminController.updateAdmin
+  AdminController.updateProfile
 );
 router.get(
-  "/auth/profile",
+  "/profile",
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   AdminController.myProfile
 );
+
 router.delete(
-  "/auth/delete/:id",
+  "/delete_account",
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   AdminController.deleteAdmin
 );
+
+router.delete(
+  "/delete_user/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.deleteUser
+);
+ 
+
+router.delete(
+  "/delete_admin/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.deleteAdmin
+);
+ 
+router.get(
+  "/get_all_user",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.getAllUsers
+);
+
+router.get(
+  "/get_all_driver",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.getAllDriver
+);
+
+router.get(
+  "/get_driver_details/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.getDriverDetails
+);
+router.patch(
+  "/block-unblock-user",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.blockUnblockUserDriver
+); 
+
+router.delete(
+  "/delete_driver/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.deleteDriver
+);
+
+router.get(
+  "/get_all_admin",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.getAllAdmins
+);
+
+router.get(
+  "/get_request_derivers",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.getAllRequestDrivers
+);
+ 
+
+router.patch(
+  "/approve_admin/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.approveAdmins
+);
+
+router.patch(
+  "/approve_driver/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.approveDriver
+);
+
+router.patch(
+  "/decline_driver/:email",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AdminController.declineDriver
+);
+ 
+
+ 
+
+ 
 
 module.exports = router;

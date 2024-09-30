@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const { errorLogger, logger } = require("./shared/logger"); 
 const socket = require("./socket/socket");
+const cron = require("node-cron");
 
 // Create an Express app
 const app = require("./app");
@@ -29,10 +30,9 @@ async function main() {
         origin: "http://localhost:5173",
       },
     });
-    
-    socket(socketIO);
 
-    // Assign Socket.IO to global for potential use in other parts of the application
+    socket(socketIO);
+    // Assign Socket.IO to globally available.
     global.io = socketIO;
 
     // Handle unhandled promise rejections

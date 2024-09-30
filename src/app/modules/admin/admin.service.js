@@ -1,296 +1,445 @@
-const config = require("../../../config");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const ApiError = require("../../../errors/ApiError");
-const { jwtHelpers } = require("../../../helpers/jwtHelpers");
-const User = require("../auth/auth.model");
+const ApiError = require("../../../errors/ApiError");  
+const httpStatus = require("http-status"); 
+const Auth = require("../auth/auth.model");
 const Admin = require("./admin.model");
-const httpStatus = require("http-status");
-const { sendEmail } = require("../../../utils/sendEmail");
-const { logger } = require("../../../shared/logger");
-const mongoose = require("mongoose");
-const {
-  registrationSuccess,
-} = require("../../../mails/email.registrationSuccess");
-const { ENUM_USER_ROLE } = require("../../../utils/enums");
-const { sendResetEmail } = require("../../../utils/sendResetMails");
-const { ObjectId } = mongoose.Types;
+const User = require("../user/user.model");
+const Driver = require("../driver/driver.model");
+const QueryBuilder = require("../../../builder/QueryBuilder"); 
+const { sendAdminMail } = require("../../../utils/sendAdminMail");
 
-// Registration for Admin
-const registrationUser = async (payload) => {
-  const { name, email, password } = payload;
 
-  const user = { name, email, password };
-  const isEmailExist = await Admin.findOne({ email });
-  if (isEmailExist) {
-    throw new ApiError(400, "Email already exist");
-  }
-  const newUser = await Admin.create(payload);
-  const data = { user: { name: user.name } };
-
-  sendEmail({
-    email: user.email,
-    subject: "Congratulations to register successfully",
-    html: registrationSuccess(data),
-  }).catch((error) => {
-    logger.error("Failed to send email:", error);
-  });
-
-  const { password: omit, ...userWithoutPassword } = newUser.toObject();
-
-  return userWithoutPassword;
-};
- 
-
-// Get All Admins
-const getAllAdmin = async () => {
-  const results = await Admin.find({}).lean();
-  return results;
-};
-
-// Update Admin
-const updateAdmin = async (id, req) => {
+// Update profile
+const updateProfile = async (req) => {
   const { files } = req;
-
-  let profile_image = undefined;
-
-  if (files && files.profile_image) {
-    profile_image = `/images/profile/${files.profile_image[0].filename}`;
-  }
+  const { userId, authId} = req.user;
 
   const data = req.body;
   if (!data) {
-    throw new Error("Data is missing in the request body!");
+    throw new ApiError(400, "Data is missing in the request body!");
   }
 
-  const isExist = await Admin.findOne({ _id: id });
-  if (!isExist) {
-    throw new ApiError(404, "Admin not found !");
+  const checkUser = await Admin.findById(userId);
+  if (!checkUser) {
+    throw new ApiError(404, "User not found!");
   }
 
-  const updatedAdminData = { ...data };
+  const checkAuth = await Auth.findById(authId);
+  if (!checkAuth) {
+    throw new ApiError(403, "You are not authorized");
+  }
 
-  const result = await Admin.findOneAndUpdate(
-    { _id: id },
-    { profile_image, ...updatedAdminData },
-    {
-      new: true,
-    }
+  let profile_image;
+  if (files?.profile_image) {
+    profile_image = `/images/image/${files.profile_image[0].filename}`;
+  }
+
+  let cover_image;
+  if (files?.cover_image) {
+    cover_image = `/images/image/${files.cover_image[0].filename}`;
+  }
+
+  const updatedData = {
+    ...data,
+    ...(profile_image && { profile_image }),
+    ...(cover_image && { cover_image }),
+  };
+
+   await Auth.findOneAndUpdate(
+    { _id: authId },
+    { name: updatedData.name },
+    { new: true }
   );
+
+  const updateUser = await Admin.findOneAndUpdate(
+    { authId },
+    updatedData,
+    { new: true }
+  ).populate('authId');
+
+  return updateUser;
+}; 
+// Get single user
+const myProfile = async (req) => {
+  const {userId} = req.user;
+  const result = await Admin.findById(userId).populate('authId');
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found!");
+  }
+
   return result;
+}; 
+ 
+// Get all request driver
+const getAllRequestDrivers = async (query) => {
+  const userQuery = new QueryBuilder(Driver.find().populate('authId'), query)
+  .search(["name","email","user_name"])
+  .filter()
+  .sort()
+  .paginate()
+  .fields()
+
+  const result = await userQuery.modelQuery;
+  const meta = await userQuery.countTotal();
+
+  console.log(result);
+
+  // Filter users to get only those with isActive === true
+  const activeUsers = result.filter(user => user.authId && !user.authId.isActive);
+
+  if (activeUsers.length === 0) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Driver no't found");
+  }
+  return {
+    meta,
+    data: activeUsers,
+  };
+
+}
+ 
+// -- get user profile -----
+const getDriverDetails = async (req) => {
+  const { email } = req.params;
+  const driver = await Driver.findOne({ email: email }).populate('authId');
+  if (!driver) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Driver not found");
+  }
+  return driver;
 };
 
-// Login
-const login = async (payload) => {
+// -- block user -----
+const blockUnblockUserDriver = async (payload) => {
+  const { email, is_block } = payload;
+  const existingUser = await User.findOne({ email: email });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  return await User.findOneAndUpdate(
+    { email: email },
+    { $set: { is_block } },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+}; 
+
+// approve Admin - done
+const approveAdmins = async (email) => { 
+
+  if(!email){  
+      throw new ApiError(400, "Email is required!"); 
+  }
+  const existUser = await Auth.findOne({ email }); 
+  if (!existUser) {
+    throw new ApiError(400, "Admin not found");
+  }
+
+  const active = await Auth.findOneAndUpdate(
+    { email },
+    { isActive: true },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  return active;
+};
+
+// approve Admin 
+const approveDriver = async (email) => { 
+
+  if(!email){  
+      throw new ApiError(400, "Email is required!"); 
+  } 
+  const existUser = await Driver.findOne({ email }); 
+  const existAuth = await Auth.findOne({ email });  
+ 
+  if (!existUser || !existAuth) {
+    throw new ApiError(400, "User not found");
+  } 
+  
+  const active = await Auth.findOneAndUpdate(
+    { email },
+    { isActive: true },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ); 
+
+  sendAdminMail(
+    email,
+    "Your application for driver profile approved.",
+    `<!DOCTYPE html>
+     <html lang="en">
+     <head>
+         <meta charset="UTF-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Driver Profile Approval</title>
+         <style>
+             body {
+                 font-family: Arial, sans-serif;
+                 background-color: #f4f4f4;
+                 margin: 0;
+                 padding: 20px;
+             }
+             .container {
+                 max-width: 600px;
+                 margin: auto;
+                 background: white;
+                 padding: 20px;
+                 border-radius: 5px;
+                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+             }
+             h1 {
+                 color: #333;
+             }
+             p {
+                 color: #555;
+                 line-height: 1.5;
+             }
+             .footer {
+                 margin-top: 20px;
+                 font-size: 12px;
+                 color: #999;
+             }
+         </style>
+     </head>
+     <body>
+         <div class="container">
+             <h1>Hello, ${existUser.name}</h1>
+             <p>We are pleased to inform you that your application for the driver profile has been approved.</p>
+             <p>Thank you for your patience and for being a part of our community!</p>
+             <div class="footer">
+                 <p>&copy; ${new Date().getFullYear()} bdCalling. All rights reserved.</p>
+             </div>
+         </div>
+     </body>
+     </html>`
+  );
+
+  return active;
+};
+
+// approve Admin 
+const declineDriver = async (req) => { 
+  const email = req.params.email;
+  const { text } = req.body;
+ 
+  if (!email) {  
+    throw new ApiError(400, "Email is required!"); 
+  } 
+  if (!text) {  
+    throw new ApiError(400, "Decline reason not provided!"); 
+  }  
+ 
+  const existAuth = await Auth.findOne({ email });
+  if (!existAuth) {
+    throw new ApiError(400, "Driver not found");
+  } 
+
+  await Promise.all([  
+    Driver.deleteOne({ authId: existAuth._id }), 
+    Auth.deleteOne({ email })
+  ]);
+ 
+  const emailBody = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Driver Profile Decline</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 600px;
+                margin: auto;
+                background: white;
+                padding: 20px;
+                border-radius: 5px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+                color: #333;
+            }
+            p {
+                color: #555;
+                line-height: 1.5;
+            }
+            .footer {
+                margin-top: 20px;
+                font-size: 12px;
+                color: #999;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Hello, ${existUser.name}</h1>
+            <p>We are sorry to inform you that your application for the driver profile has been declined.</p>
+            <p><strong>The reason is:</strong> <strong>${text}</strong></p>
+            <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} bdCalling. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+  await sendAdminMail(email, "Your application for driver profile declined.", emailBody);
+
+  return { message: "Driver application declined and notified." };
+};
+
+// Delete my account
+const deleteMyAccount = async (payload) => {
   const { email, password } = payload;
 
-  const isUserExist = await Admin.isAdminExist(email);
+  const isUserExist = await Auth.isAuthExist(email);
   if (!isUserExist) {
-    throw new ApiError(404, "Admin does not exist");
+    throw new ApiError(404, "User does not exist");
   }
 
   if (
     isUserExist.password &&
-    !(await Admin.isPasswordMatched(password, isUserExist.password))
+    !(await Auth.isPasswordMatched(password, isUserExist.password))
   ) {
     throw new ApiError(402, "Password is incorrect");
   }
-
-  const { _id: userId, role } = isUserExist;
-  const accessToken = jwtHelpers.createToken(
-    { userId, role },
-    config.jwt.secret,
-    config.jwt.expires_in
-  );
-  const refreshToken = jwtHelpers.createToken(
-    { userId, role },
-    config.jwt.refresh_secret,
-    config.jwt.refresh_expires_in
-  );
-
-  return {
-    accessToken,
-    refreshToken,
-  };
+         await Admin.deleteOne({authId: isUserExist._id}) 
+  return await Auth.deleteOne({ email });
 };
 
-// Refresh Token
-const refreshToken = async (token) => {
-  let verifiedToken = null;
-  try {
-    verifiedToken = jwtHelpers.verifyToken(token, config.jwt.refresh_secret);
-  } catch (err) {
-    throw new ApiError(402, "Invalid Refresh Token");
-  }
-
-  const { userId } = verifiedToken;
-
-  const isUserExist = await Admin.isAdminExist(userId);
+// Delete admin account
+const deleteAdmin = async (email) => { 
+  const isUserExist = await Auth.isAuthExist(email);
   if (!isUserExist) {
-    throw new ApiError(403, "Admin does not exist");
-  }
-
-  const newAccessToken = jwtHelpers.createToken(
-    {
-      id: isUserExist._id,
-      role: isUserExist.role,
-    },
-    config.jwt.secret,
-    config.jwt.expires_in
-  );
-
-  return {
-    accessToken: newAccessToken,
-  };
-};
-
-// Change Password
-const changePassword = async (user, payload) => {
-  const { oldPassword, newPassword } = payload;
-
-  const isAdminExist = await Admin.findOne({ _id: user.userId }).select(
-    "+password"
-  );
-
-  if (!isAdminExist) {
     throw new ApiError(404, "Admin does not exist");
   }
-  if (
-    isAdminExist.password &&
-    !(await Admin.isPasswordMatched(oldPassword, isAdminExist.password))
-  ) {
-    throw new ApiError(402, "Old password is incorrect");
-  }
-  isAdminExist.password = newPassword;
-  await isAdminExist.save();
+
+         await Admin.deleteOne({authId: isUserExist._id}) 
+  return await Auth.deleteOne({ email });
 };
 
-const forgotPass = async (payload) => {
-  const admin = await Admin.findOne(
-    { email: payload.email },
-    { _id: 1, role: 1 }
-  );
-
-  if (!admin) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Admin does not exist!");
+// Delete admin account
+const deleteUser = async (email) => { 
+  const isUserExist = await Auth.isAuthExist(email);
+  if (!isUserExist) {
+    throw new ApiError(404, "User does not exist");
   }
-
-  let profile = null;
-  if (
-    admin.role === ENUM_USER_ROLE.ADMIN ||
-    admin.role === ENUM_USER_ROLE.SUPER_ADMIN
-  ) {
-    profile = await Admin.findOne({ _id: admin._id });
-  }
-
-  if (!profile) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Profile not found!");
-  }
-
-  if (!profile.email) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Email not found!");
-  }
-
-  const activationCode = forgetActivationCode();
-  const expiryTime = new Date(Date.now() + 15 * 60 * 1000);
-  admin.verifyCode = activationCode;
-  admin.verifyExpire = expiryTime;
-  await admin.save();
-
-  sendResetEmail(
-    profile.email,
-    `
-        <div>
-          <p>Hi, ${profile.name}</p>
-          <p>Your password reset code: ${activationCode}</p>
-          <p>Thank you</p>
-        </div>
-      `
-  );
+         await User.deleteOne({authId: isUserExist._id}) 
+  return await Auth.deleteOne({ email });
 };
 
-const forgetActivationCode = () => {
-  const activationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  return activationCode;
+// Delete admin account
+const deleteDriver = async (email) => { 
+  const isUserExist = await Auth.isAuthExist(email);
+  if (!isUserExist) {
+    throw new ApiError(404, "Driver does not exist");
+  }
+         await Driver.deleteOne({authId: isUserExist._id}) 
+  return await Auth.deleteOne({ email });
 };
+  
+// Get all user
+const getAllUsers = async (query) => {
+  const userQuery = new QueryBuilder(User.find().populate('authId'), query)
+  .search(["name","email","user_name"])
+  .filter()
+  .sort()
+  .paginate()
+  .fields()
 
-const checkIsValidForgetActivationCode = async (payload) => {
-  const admin = await Admin.findOne({ email: payload.email });
+  const result = await userQuery.modelQuery;
+  const meta = await userQuery.countTotal();
 
-  if (!admin) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Admin does not exist!");
+  console.log(result);
+
+  // Filter users to get only those with isActive === true
+  const activeUsers = result.filter(user => user.authId && user.authId.isActive);
+
+  if (activeUsers.length === 0) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User no't found");
   }
 
-  if (admin.verifyCode !== payload.code) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid reset code!");
+  return {
+    meta,
+    data: activeUsers,
+  };
+
+} 
+
+// Get all user
+const getAllDriver = async (query) => {
+  const userQuery = new QueryBuilder(Driver.find().populate('authId'), query)
+  .search(["name","email","user_name"])
+  .filter()
+  .sort()
+  .paginate()
+  .fields()
+
+  const result = await userQuery.modelQuery;
+  const meta = await userQuery.countTotal();
+
+  console.log(result);
+
+  // Filter users to get only those with isActive === true
+  const activeUsers = result.filter(user => user.authId && user.authId.isActive);
+
+  if (activeUsers.length === 0) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Driver no't found");
   }
+  return {
+    meta,
+    data: activeUsers,
+  };
 
-  const currentTime = new Date();
-  if (currentTime > admin.verifyExpire) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Reset code has expired!");
-  }
+}
 
-  const result = await Admin.updateOne(
-    { email: payload.email },
-    { $set: { valid: true } },
-    { upsert: true }
-  );
-
-  return { valid: true };
-};
-
-const resetPassword = async (payload) => {
-  const { email, newPassword, confirmPassword } = payload;
-
-  if (newPassword !== confirmPassword) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Passwords don't match");
-  }
-
-  const admin = await Admin.findOne({ email }, { _id: 1 });
-
-  if (!admin) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Admin not found!");
-  }
-
-  const hashedPassword = await bcrypt.hash(
-    newPassword,
-    Number(config.bcrypt_salt_rounds)
-  );
-
-  await Admin.updateOne({ email }, { password: hashedPassword });
-  admin.verifyCode = null;
-  admin.verifyExpire = null;
-  await admin.save();
-};
-
-const myProfile = async (req) => {
-  const { userId } = req.user;
-  const result = await Admin.findById(userId);
+// Get all admin
+const getAllAdmin = async () => {
+  const result = await Admin.find({}).populate('authId');
   if (!result) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Profile not found");
-  }
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  } 
   return result;
-};
+}; 
 
-const deleteAdmin = async (id) => {
-  const result = await Admin.findByIdAndDelete(id);
-  return result;
-};
+// Get all driver
+// const getAllDriver = async (user) => {
+//   const result = await Admin.findOne({authId: user.userId}).populate('authId');
+//   if (!result) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+//   } 
+//   return result;
+// }; 
 
 const AdminService = {
-  registrationUser,
-  // createUser,
-  getAllAdmin,
-  updateAdmin,
-  login,
-  refreshToken,
-  changePassword,
-  forgotPass,
-  forgetActivationCode,
-  checkIsValidForgetActivationCode,
-  resetPassword,
+  updateProfile,
   myProfile,
   deleteAdmin,
+  deleteUser,
+  approveAdmins,
+  deleteMyAccount,
+  getAllUsers,
+  getAllAdmin, 
+  approveDriver,
+  getAllDriver,
+  deleteDriver,
+  getAllRequestDrivers, 
+  getDriverDetails,
+  blockUnblockUserDriver,
+  approveDriver,
+  declineDriver,
+
 };
 
 module.exports = { AdminService };

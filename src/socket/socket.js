@@ -1,36 +1,38 @@
-const getUserDetailsFromToken = require("../helpers/getUserDetailsFromToken");
+const express = require('express'); 
+const handleChat = require('./chat/chat');
+const { ENUM_SOCKET_EVENT } = require('../utils/enums');
+const {handleNotification} = require('../app/modules/notification/notification.service');
 
-const handleNotification = require("./notification");
+ 
+// Set to keep track of online users
+const onlineUsers = new Set();
 
-const handleChat = require("./chat/chat");
+const socket = async (io) => {
+  io.on(ENUM_SOCKET_EVENT.CONNECT, async (socket) => {
+    const currentUserId = socket.handshake.query.id;
+    const role = socket.handshake.query.role;
 
-// online user
-const onlineUser = new Set();
-const socket = (io) => {
-  io.on("connection", async (socket) => {
-    console.log("A user connected");
-    const token = socket.handshake.auth.token;
-    const currentUser = await getUserDetailsFromToken(token);
-    const currentUserId = currentUser?._id.toString();
-    // create room -----------
     socket.join(currentUserId);
+    console.log("A user connected", currentUserId);
 
-    // set online user---------------------------
-    onlineUser.add(currentUserId);
-    // send to the client-----------------
-    io.emit("onlineUser", Array.from(onlineUser));
+    // Add the user to the online users set
+    onlineUsers.add(currentUserId);
+    io.emit("onlineUser", Array.from(onlineUsers));
 
-    // handle chat----------------------
-    handleChat(io, socket, currentUserId, onlineUser);
+    // Handle notifications
+    await handleNotification(currentUserId, role, socket, io);
 
-    // handle notification ------------------------------------------
-    handleNotification(currentUserId, socket, io);
+    // Handle chat functionality (uncomment if needed)
+    // handleChat(io, socket, currentUserId, onlineUsers);
 
-    // Disconnect user ---------------------
+    // Handle user disconnection
     socket.on("disconnect", () => {
-      console.log("A user disconnected");
+      console.log("A user disconnected", currentUserId);
+      onlineUsers.delete(currentUserId); // Remove user from online users
+      io.emit("onlineUser", Array.from(onlineUsers)); // Update online user list
     });
   });
 };
 
+// Export the socket initialization function
 module.exports = socket;

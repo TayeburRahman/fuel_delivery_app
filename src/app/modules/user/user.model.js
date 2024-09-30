@@ -11,24 +11,28 @@ const UserSchema = new Schema(
       type: mongoose.Schema.ObjectId,
       required: true,
       ref: "Auth",
-    }, 
-    user_name: {
-      type: String,
-      unique: true,
-      sparse: true,
-    }, 
+    },  
     name: {
       type: String,
       required: true,
     }, 
+    email: {
+      type: String,
+      required: true,
+    },
     profile_image: {
       type: String,
       default:
         "https://res.cloudinary.com/arafatleo/image/upload/v1720600946/images_1_dz5srb.png",
     }, 
+    cover_image:{
+      type: String,
+      default:
+        "https://res.cloudinary.com/arafatleo/image/upload/v1720600946/images_1_dz5srb.png",
+    },
     phone_number: {
       type: String,
-      unique: true,
+      required: true,
     }, 
     address: {
       type: String,

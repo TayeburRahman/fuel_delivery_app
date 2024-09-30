@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const AuthRoutes = require("../modules/auth/auth.routes");
+const UserRoutes = require("../modules/user/user.routes");
+const DriverRoutes = require("../modules/driver/driver.routes");
 const AdminRoutes = require("../modules/admin/admin.routes"); 
+const OrderRoutes = require("../modules/order/order.routes"); 
 const ManageRoutes = require("../modules/manage-web/manage.routes");
 const DashboardRoutes = require("../modules/dashboard/dashboard.routes");
 const PaymentRoutes = require("../modules/payment/payment.routes"); 
@@ -14,8 +17,20 @@ const moduleRoutes = [
     route: AuthRoutes,
   },
   {
+    path: "/user",
+    route: UserRoutes,
+  },
+  {
+    path: "/driver",
+    route: DriverRoutes,
+  },
+  {
     path: "/admin",
     route: AdminRoutes,  
+  }, 
+  {
+    path: "/order",
+    route: OrderRoutes,  
   }, 
   {
     path: "/notification",

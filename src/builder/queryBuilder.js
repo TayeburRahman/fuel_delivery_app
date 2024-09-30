@@ -1,5 +1,3 @@
-const mongoose = require("mongoose");
-
 class QueryBuilder {
   constructor(modelQuery, query) {
     this.modelQuery = modelQuery;
@@ -9,11 +7,13 @@ class QueryBuilder {
   search(searchableFields) {
     const searchTerm = this.query?.searchTerm;
     if (searchTerm) {
-      this.modelQuery = this.modelQuery.find({
-        $or: searchableFields.map((field) => ({
-          [field]: { $regex: searchTerm, $options: "i" },
-        })),
-      });
+      this.modelQuery = this.modelQuery
+        .find({
+          $or: searchableFields.map((field) => ({
+            [field]: { $regex: searchTerm, $options: "i" },
+          })),
+        })
+        .collation({ locale: "en", strength: 2 });
     }
     return this;
   }
@@ -40,7 +40,7 @@ class QueryBuilder {
 
   paginate() {
     const page = Number(this.query?.page) || 1;
-    const limit = Number(this.query?.limit) || 9;
+    const limit = Number(this.query?.limit) || 10;
     const skip = (page - 1) * limit;
 
     this.modelQuery = this.modelQuery.skip(skip).limit(limit);

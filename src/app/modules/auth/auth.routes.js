@@ -8,6 +8,11 @@ const router = express.Router();
 
 // User routes
 router.post("/register", AuthController.registrationAccount);
+router.post(
+  "/driver/register",
+   uploadFile(), 
+   AuthController.registrationDriverAccount);
+
 router.post("/activate-user", AuthController.activateAccount);
 router.post("/login", AuthController.loginAccount);
 router.post("/resend", AuthController.resendActivationCode);
@@ -20,8 +25,7 @@ router.patch(
   AuthController.changePassword
 );
 router.post(
-  "/reset-password",
-  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  "/reset-password", 
   AuthController.resetPassword
 );
 router.patch(

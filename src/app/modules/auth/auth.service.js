@@ -16,6 +16,7 @@ const { assign } = require("nodemailer/lib/shared");
 const Auth = require("./auth.model");
 const User = require("../user/user.model");
 const Admin = require("../admin/admin.model");
+const Driver = require("../driver/driver.model");
 
 
 // Create activation token -done
@@ -25,79 +26,154 @@ const createActivationToken = () => {
 };
 
 // Registration - done
-const registrationAccount = async (payload) => {
-  const { gender, role, email, password, confirmPassword, ...other } = payload;
+const registrationAccount = async (req) => {
+  const { gender, role, password, confirmPassword, email, ...other } = req.body;
 
+  // Input validation
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
     throw new ApiError(400, "Valid Role is required!");
   }
-
+  if (!password || !confirmPassword || !email) {
+    throw new ApiError(400, "Email, Password, and Confirm Password are required!");
+  }
   if (password !== confirmPassword) {
     throw new ApiError(400, "Password and Confirm Password didn't match");
   }
 
-  const isEmailExist = await Auth.findOne({ email, isActive: true });
-  if (isEmailExist) {
+  const existingAuth = await Auth.findOne({ email }).lean();
+  if (existingAuth?.isActive) {
     throw new ApiError(400, "Email already exists");
   }
 
-  const existInactive = await Auth.findOne({ email, isActive: false });
-  if (existInactive) {
-    await User.deleteOne({ authId: existInactive._id });
-    await Auth.deleteOne({ email });
+  if (existingAuth && !existingAuth.isActive) {
+    await Promise.all([
+      role === "USER" && User.deleteOne({ authId: existingAuth._id }),
+      role === "ADMIN" && Admin.deleteOne({ authId: existingAuth._id }),
+      Auth.deleteOne({ email }),
+    ]);
   }
 
+  const { activationCode } = createActivationToken(); 
   const auth = {
-    email,
     role,
+    name: other.name,
+    email,
+    activationCode,
     password,
-    confirmPassword,
     expirationTime: Date.now() + 3 * 60 * 1000,
   };
 
-  const activationToken = createActivationToken();
-  const activationCode = activationToken.activationCode;
-  auth.activationCode = activationCode;
-  auth.name = other.name;
-  const data = { user: { name: auth.name }, activationCode };
-
-  try {
+  if (role === "USER") {
     sendEmail({
       email: auth.email,
       subject: "Activate Your Account",
-      html: registrationSuccessEmailBody(data),
-    });
-  } catch (error) {
-    throw new ApiError(500, error.message);
+      html: registrationSuccessEmailBody({ user: { name: auth.name }, activationCode }),
+    }).catch(error => console.error("Failed to send email:", error.message));
   }
-
 
   const createAuth = await Auth.create(auth);
   if (!createAuth) {
-    throw new ApiError(500, "Failed to create user");
+    throw new ApiError(500, "Failed to create auth account");
   }
 
   other.authId = createAuth._id;
+  other.email = email;
 
-  let result = {}
-  if (role === ENUM_USER_ROLE.USER) {
-    result = await User.create(other);
-  } else if (role === ENUM_USER_ROLE.ADMIN) {
-    result = await Admin.create(other);
-  } else if (role === ENUM_USER_ROLE.DRIVER) {
-    result = await User.create(other);
-  } else {
-    throw new ApiError(400, "Invalid role provided!");
+  // Role-based user creation
+  let result;
+  switch (role) {
+    case ENUM_USER_ROLE.USER:
+      result = await User.create(other);
+      break;
+    case ENUM_USER_ROLE.ADMIN:
+      result = await Admin.create(other);
+      break;
+    default:
+      throw new ApiError(400, "Invalid role provided!");
   }
 
-  return result
+  return { result, role, message: "Account created successfully!" }; // Adding a success message
 };
+
+
+const registrationDriverAccount = async (req) => {
+  const { gender, role, password, confirmPassword, email, ...other } = req.body;
+  const { files } = req;
+
+  // Validate role
+  if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
+    throw new ApiError(400, "Valid Role is required!");
+  }
+
+  // Validate password
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "Password and Confirm Password didn't match");
+  }
+
+  // Check for existing auth
+  const existingAuth = await Auth.findOne({ email }).lean();
+  
+  if (existingAuth?.isActive) {
+    throw new ApiError(400, "Email already exists");
+  }
+
+  // Remove inactive auth if exists
+  if (existingAuth && !existingAuth.isActive) { 
+      await Promise.all([
+        Driver.deleteOne({ authId: existingAuth._id }),
+        Auth.deleteOne({ email }),
+      ]); 
+  }
+ 
+  const auth = {
+    role,
+    name: other.name,
+    email,
+    password,  
+    expirationTime: Date.now() + 3 * 60 * 1000,
+  };
+
+  let createAuth;
+  try {
+    createAuth = await Auth.create(auth);
+  } catch (error) {
+    console.error("Failed to create auth account:", error);
+    throw new ApiError(500, "Failed to create auth account");
+  }
+
+  // Prepare additional driver data
+  other.authId = createAuth._id;
+  other.email = email;
+  if (files) {
+    if (files.licenseFrontImage) {
+      other.licenseFrontImage = `/images/licenses/${files.licenseFrontImage[0].filename}`;
+    }
+    if (files.licenseBackImage) {
+      other.licenseBackImage = `/images/licenses/${files.licenseBackImage[0].filename}`;
+    }
+    if (files.vehicleDocumentImage) {
+      other.vehicleDocumentImage = `/images/vehicle/${files.vehicleDocumentImage[0].filename}`;
+    }
+    if (files.vehicleImage) {
+      other.vehicleImage = `/images/vehicle/${files.vehicleImage[0].filename}`;
+    }
+    if (files.profile_image) {
+      //@ts-ignore
+      other.profile_image = `/images/profile/${files.profile_image[0].filename}`;
+    }
+  } 
+ 
+  const result = await Driver.create(other);
+  
+  return { result, role };
+};
+ 
 
 // Activate user - done
 const activateAccount = async (payload) => {
   const { activation_code, userEmail } = payload;
 
-  const existUser = await Auth.findOne({ email: userEmail });
+  const existUser = await Auth.findOne({ email: userEmail }); 
   if (!existUser) {
     throw new ApiError(400, "User not found");
   }
@@ -113,10 +189,22 @@ const activateAccount = async (payload) => {
     }
   );
 
+  let result = {} 
+  if (existUser.role === ENUM_USER_ROLE.USER) {
+    result = await User.findOne({ authId: existUser._id }); 
+  } else if (existUser.role === ENUM_USER_ROLE.ADMIN || ENUM_USER_ROLE.SUPER_ADMIN) {
+    result = await Admin.findOne({ authId: existUser._id }); 
+  } else if (existUser.role === ENUM_USER_ROLE.DRIVER) {
+    result = await Driver.findOne({ authId: existUser._id }); 
+  } else {
+    throw new ApiError(400, "Invalid role provided!");
+  }
+
   const accessToken = jwtHelpers.createToken(
     {
-      userId: existUser._id,
+      authId: existUser._id,
       role: existUser.role,
+      userId: result._id,
     },
     config.jwt.secret,
     config.jwt.expires_in
@@ -124,7 +212,7 @@ const activateAccount = async (payload) => {
 
   // Create refresh token
   const refreshToken = jwtHelpers.createToken(
-    { userId: existUser._id, role: existUser.role },
+    { authId: existUser._id,  userId: result._id, role: existUser.role },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
@@ -139,44 +227,62 @@ const activateAccount = async (payload) => {
 const loginAccount = async (payload) => {
   const { email, password } = payload;
 
-  const isUserExist = await Auth.isAuthExist(email);
-  const checkUser = await Auth.findOne({ email });
-  if (!isUserExist) {
+  const isAuth = await Auth.isAuthExist(email);
+
+  if (!isAuth) {
     throw new ApiError(404, "User does not exist");
   }
 
-  if (
-    isUserExist.password &&
-    !(await Auth.isPasswordMatched(password, isUserExist.password))
-  ) {
-    throw new ApiError(402, "Password is incorrect");
-  }
-  if (isUserExist.isActive === false) {
-    throw new ApiError(
-      httpStatus.UNAUTHORIZED,
-      "Please activate your account then try to login"
-    );
+  let userDetails;
+  let role;
+
+  switch (isAuth.role) {
+    case ENUM_USER_ROLE.USER:
+      userDetails = await User.findOne({ authId: isAuth._id }).populate('authId');
+      role = ENUM_USER_ROLE.USER;
+      break;
+    case ENUM_USER_ROLE.ADMIN:
+      userDetails = await Admin.findOne({ authId: isAuth._id }).populate('authId');
+      role = ENUM_USER_ROLE.ADMIN;
+      break;
+    case ENUM_USER_ROLE.DRIVER:
+      userDetails = await Driver.findOne({ authId: isAuth._id }).populate('authId');
+      role = ENUM_USER_ROLE.DRIVER;
+      break;
+    default:
+      throw new ApiError(400, "Invalid role provided!");
   }
 
-  const { _id: userId, role } = isUserExist;
+  if (isAuth.password && !(await Auth.isPasswordMatched(password, isAuth.password))) {
+    throw new ApiError(401, "Password is incorrect");
+  }
+
+  if (!isAuth.isActive) {
+    throw new ApiError(401, "Please activate your account then try to login");
+  }
+
+  const { _id: authId } = isAuth;  
+
+  // Create tokens
   const accessToken = jwtHelpers.createToken(
-    { userId, role, conversationId: checkUser?.conversationId },
+    { authId, role, userId: userDetails._id },
     config.jwt.secret,
     config.jwt.expires_in
   );
-  // Create refresh token
+
   const refreshToken = jwtHelpers.createToken(
-    { userId, role },
+    { authId, role, userId: userDetails._id },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
 
   return {
-    id: checkUser?._id,
-    conversationId: checkUser?.conversationId,
-    isPaid: checkUser?.isPaid,
+    id: isAuth._id,
+    conversationId: isAuth.conversationId,
+    isPaid: isAuth.isPaid,
     accessToken,
     refreshToken,
+    user: userDetails
   };
 };
 
@@ -340,14 +446,14 @@ const checkIsValidForgetActivationCode = async (payload) => {
 };
 
 const resetPassword = async (req) => {
-  const { userId } = req.user;
+  const { email } = req.query;
   const { newPassword, confirmPassword } = req.body;
 
   if (newPassword !== confirmPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Passwords do not match");
   }
 
-  const auth = await Auth.findOne({ _id: userId }, { _id: 1, codeVerify: 1 });
+  const auth = await Auth.findOne({ email }, { _id: 1, codeVerify: 1 });
   if (!auth) {
     throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
   }
@@ -358,7 +464,7 @@ const resetPassword = async (req) => {
   const hashedPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
 
   const result = await Auth.updateOne(
-    { _id: userId },
+    { email },
     { password: hashedPassword, codeVerify: false }
   );
   return result;
@@ -367,7 +473,7 @@ const resetPassword = async (req) => {
 // Change password
 const changePassword = async (user, payload) => {
 
-  const { userId } = user;
+  const { authId } = user;
 
   const { oldPassword, newPassword, confirmPassword } = payload;
   if (newPassword !== confirmPassword) {
@@ -376,7 +482,7 @@ const changePassword = async (user, payload) => {
       "Password and confirm password do not match"
     );
   }
-  const isUserExist = await Auth.findOne({ _id: userId }).select("+password");
+  const isUserExist = await Auth.findById(authId).select("+password");
   if (!isUserExist) {
     throw new ApiError(404, "Account does not exist!");
   }
@@ -542,6 +648,7 @@ const blockAccount = async (id) => {
 
 const AuthService = {
   registrationAccount,
+  registrationDriverAccount,
   loginAccount,
   changePassword,
   forgotPass,

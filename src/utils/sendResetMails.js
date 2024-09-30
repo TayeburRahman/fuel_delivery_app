@@ -15,7 +15,7 @@ async function sendResetEmail(to, html) {
   await transporter.sendMail({
     from: config.smtp.smtp_mail,
     to,
-    subject: 'Reset Password Link',
+    subject: 'Reset Password OTP code.',
     html,
   });
 }

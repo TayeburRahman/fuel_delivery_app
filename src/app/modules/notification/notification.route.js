@@ -5,10 +5,10 @@ const { notificationController } = require("./notificaiton.controller");
 
 const router = express.Router();
 
-router.get(
-  "/",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.DRIVER, ENUM_USER_ROLE.USER),
-  notificationController.getAllNotification
-);
+// router.get(
+//   "/",
+//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.DRIVER, ENUM_USER_ROLE.USER),
+//   notificationController.getAllNotification
+// );
 
 module.exports = router;

@@ -4,13 +4,29 @@ const catchAsync = require("../../../shared/catchasync");
 const config = require("../../../config");
 
 const registrationAccount = catchAsync(async (req, res) => {
-  await AuthService.registrationAccount(req.body);
+ const {role} =  await AuthService.registrationAccount(req);
+ const message = role === "USER" ? "Please check your email for the activation OTP code.":"Your account is awaiting admin approval." ;
+
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Please check your email to activate your account",
+    message,
+    data: role,
   });
 });
+
+const registrationDriverAccount = catchAsync(async (req, res) => {
+  const {role, result} =  await AuthService.registrationDriverAccount(req);
+  const message = "Your account is awaiting admin approval." ; 
+   sendResponse(res, {
+     statusCode: 200,
+     success: true,
+     message,
+     data: result,
+   });
+ });
+
+
 
 const activateAccount = catchAsync(async (req, res) => {
   const result = await AuthService.activateAccount(req.body);
@@ -145,6 +161,7 @@ const blockAccount = catchAsync(async (req, res) => {
 
 const AuthController = {
   registrationAccount,
+  registrationDriverAccount,
   activateAccount,
   loginAccount, 
   changePassword,

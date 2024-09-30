@@ -8,31 +8,25 @@ const router = express.Router();
 
 // User routes
 router.patch(
-  "/user/edit-profile",
+  "/edit-profile",
   auth(ENUM_USER_ROLE.USER),
   uploadFile(),
   UserController.updateProfile
 );
  
 router.delete(
-  "/user/delete-account",
+  "/delete-account",
   auth(ENUM_USER_ROLE.USER),
   UserController.deleteMyAccount
 ); 
  
 // IDS Work routes
 router.get(
-  "/user/profile",
+  "/profile",
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  UserController.getSingleUser
+  UserController.getProfile
 ); 
-
-// Admin routes
-router.get(
-  "/user/get_all",
-  // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  UserController.getAllUsers
-);
+ 
 
  
 

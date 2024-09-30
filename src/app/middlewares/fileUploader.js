@@ -6,17 +6,26 @@ const uploadFile = () => {
     destination: function (req, file, cb) {
       let uploadPath = "";
 
-      if (file.fieldname === "image") {
-        uploadPath = "uploads/images/image";
-      } else if (file.fieldname === "profile_image") {
-        uploadPath = "uploads/images/image";
-      } else if (file.fieldname === "video") {
-        uploadPath = "uploads/video";
-      } else if (file.fieldname === "product_img") {
-        uploadPath = "uploads/images/product";
+      if (
+        file.fieldname === 'licenseFrontImage' ||
+        file.fieldname === 'licenseBackImage'
+      ) {
+        uploadPath = 'uploads/images/licenses';
+      } else if (file.fieldname === 'image') {
+        uploadPath = 'uploads/images/image';
+      } else if (file.fieldname === 'profile_image') {
+        uploadPath = 'uploads/images/profile';
+      } else if (file.fieldname === 'video') {
+        uploadPath = 'uploads/video';
+      } else if (file.fieldname === 'vehicleDocumentImage') {
+        uploadPath = 'uploads/images/vehicle';
+      } else if (file.fieldname === 'vehicleImage') {
+        uploadPath = 'uploads/images/vehicle';
       } else {
-        uploadPath = "uploads";
+        uploadPath = 'uploads';
       }
+
+      
 
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
@@ -41,11 +50,14 @@ const uploadFile = () => {
 
   const fileFilter = (req, file, cb) => {
     const allowedFieldnames = [
-      "image",
-      "product_img",
-      "profile_image",
-      "video",
-    ];
+        'image',
+        'vehicleImage',
+        'vehicleDocumentImage',
+        'profile_image',
+        'licenseBackImage',
+        'licenseFrontImage',
+        'video_thumbnail',
+      ];
 
     if (file.fieldname === undefined) {
       // Allow requests without any files
@@ -70,10 +82,13 @@ const uploadFile = () => {
     storage: storage,
     fileFilter: fileFilter,
   }).fields([
-    { name: "image", maxCount: 1 },
-    { name: "product_img", maxCount: 1 },
-    { name: "video", maxCount: 1 },
-    { name: "profile_image", maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'vehicleImage', maxCount: 1 },
+    { name: 'vehicleDocumentImage', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+    { name: 'licenseBackImage', maxCount: 1 },
+    { name: 'licenseFrontImage', maxCount: 1 },
+    { name: 'profile_image', maxCount: 1 },
   ]);
 
   return upload;

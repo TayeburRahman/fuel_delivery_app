@@ -7,19 +7,30 @@ const ENUM_USER_ROLE = {
 
 const ENUM_JOB_STATUS = {
   PENDING: "pending",
-  ACCEPTED: "accepted",
-  CONFIRMED: "confirmed",
-  ARRIVED: "arrived",
+  ACCEPTED: "accepted", 
   PICKED: "picked",
   IN_PROGRESS: "in-progress",
-  COMPLETED: "completed",
-  END: "end",
+  COMPLETED: "delivered",
+  // END: "end",
   CANCELED: "canceled",
+};
+
+const ENUM_SOCKET_EVENT = {
+  CONNECT: "connection",
+  NOTIFICATION: "notification",
+  MESSAGE_NEW: "new-message",
+  MESSAGE_GETALL: "getall-message",
+  CONVERSION: "conversion", 
+  SEEN_NOTIFICATION: "seen-notification",
+  NEW_NOTIFICATION: "new-notification",
+  
 };
 
 const ENUM_NOTIFICATION_TYPE = {
   PARCEL_PICKED: "parcel_picked",
   PARCEL_DELIVERED: "parcel_delivered",
+  MESSAGE: "message",
+  SERVER_ERROR: "error",
   MESSAGE: "message",
 };
 
@@ -27,4 +38,5 @@ module.exports = {
   ENUM_USER_ROLE,
   ENUM_JOB_STATUS,
   ENUM_NOTIFICATION_TYPE,
+  ENUM_SOCKET_EVENT,
 };

@@ -3,26 +3,25 @@ const { AdminService } = require("./admin.service");
 const catchAsync = require("../../../shared/catchasync");
 const config = require("../../../config");
 
-const registrationUser = catchAsync(async (req, res) => {
-  const result = await AdminService.registrationUser(req.body);
+ 
 
+const updateProfile = catchAsync(async (req, res) => {
+  const result = await AdminService.updateProfile(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Admin Created",
+    message: "Profile updated successfully",
     data: result,
   });
 });
 
-const createUser = catchAsync(async (req, res) => {
-  const userData = req.body;
-
-  const result = await AdminService.createUser(userData);
-
+const myProfile = catchAsync(async (req, res) => {
+  
+  const result = await AdminService.myProfile(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "User created successfully",
+    message: "Successful!",
     data: result,
   });
 });
@@ -33,95 +32,12 @@ const getAllUsers = catchAsync(async (req, res) => {
     statusCode: 200,
     success: true,
     message: "User retrieved successfully",
-    data: result.data,
+    data: result,
     meta: result.meta,
   });
-});
-
-const getSingleUser = catchAsync(async (req, res) => {
-  const id = req.params.id;
-  const result = await AdminService.getSingleUser(id);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "User retrieved successfully",
-    data: result,
-  });
-});
-
-const updateAdmin = catchAsync(async (req, res) => {
-  const id = req.params.id;
-  const result = await AdminService.updateAdmin(id, req);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Admin updated successfully",
-    data: result,
-  });
-});
-
-const deleteUser = catchAsync(async (req, res) => {
-  const id = req.params.id;
-  const result = await AdminService.deleteUser(id);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "User deleted successfully",
-    data: result,
-  });
-});
-
-const login = catchAsync(async (req, res) => {
-  const loginData = req.body;
-  const result = await AdminService.login(loginData);
-  const { refreshToken } = result;
-
-  // set refresh token into cookie
-  const cookieOptions = {
-    secure: config.env === "production",
-    httpOnly: true,
-  };
-  res.cookie("refreshToken", refreshToken, cookieOptions);
-
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Admin logged in successfully!",
-    data: result,
-  });
-});
-
-const refreshToken = catchAsync(async (req, res) => {
-  const { refreshToken } = req.cookies;
-  const result = await AdminService.refreshToken(refreshToken);
-
-  // set refresh token into cookie
-  const cookieOptions = {
-    secure: config.env === "production",
-    httpOnly: true,
-  };
-  res.cookie("refreshToken", refreshToken, cookieOptions);
-
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Admin logged in successfully!",
-    data: result,
-  });
-});
-
-const changePassword = catchAsync(async (req, res) => {
-  const passwordData = req.body;
-
-  await AdminService.changePassword(req.user, passwordData);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Password changed successfully!",
-  });
-});
-
-const getAllAdmin = catchAsync(async (req, res) => {
+}); 
+ 
+const getAllAdmins = catchAsync(async (req, res) => {
   const result = await AdminService.getAllAdmin();
   sendResponse(res, {
     statusCode: 200,
@@ -131,8 +47,8 @@ const getAllAdmin = catchAsync(async (req, res) => {
   });
 });
 
-const myProfile = catchAsync(async (req, res) => {
-  const result = await AdminService.myProfile(req);
+const getAllDriver = catchAsync(async (req, res) => {
+  const result = await AdminService.getAllDriver();
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -141,62 +57,130 @@ const myProfile = catchAsync(async (req, res) => {
   });
 });
 
-const forgotPass = catchAsync(async (req, res) => {
-  await AdminService.forgotPass(req.body);
-
+const getAllRequestDrivers = catchAsync(async (req, res) => {
+  const result = await AdminService.getAllRequestDrivers();
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Check your email!",
+    message: "Successful!",
+    data: result,
   });
 });
 
-const resetPassword = catchAsync(async (req, res) => {
-  await AdminService.resetPassword(req.body);
+const getAllRequestAdmin= catchAsync(async (req, res) => {
+  const result = await AdminService.getAllRequestAdmin();
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Account recovered!",
+    message: "Successful!",
+    data: result,
   });
 });
 
+ 
+const getDriverDetails = catchAsync(async (req, res) => {
+  const result = await AdminService.getDriverDetails(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User retrieved successfully",
+    data: result,
+  });
+});
+
+const blockUnblockUserDriver = catchAsync(async (req, res) => {
+  const result = await AdminService.blockUnblockUserDriver(req.body);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User retrieved successfully",
+    data: result,
+  });
+});
+ 
+const approveAdmins = catchAsync(async (req, res) => {
+  const email = req.params.email;
+  const result = await AdminService.approveAdmins(email);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Admin approve successfully",
+    data: result,
+  });
+}); 
+
+const approveDriver = catchAsync(async (req, res) => {
+  const email = req.params.email;
+  const result = await AdminService.approveDriver(email);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Driver approve successfully",
+    data: result,
+  });
+}); 
+
+const declineDriver = catchAsync(async (req, res) => {
+  const result = await AdminService.declineDriver(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Driver decline successfully",
+    data: result,
+  });
+}); 
+   
 const deleteAdmin = catchAsync(async (req, res) => {
-  const id = req.params.id;
-  const result = await AdminService.deleteAdmin(id);
+  const email = req.params.email;
+  const result = await AdminService.deleteAdmin(email);
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Admin deleted successfully",
     data: result,
   });
-});
+}); 
 
-const checkIsValidForgetActivationCode = catchAsync(async (req, res) => {
-  const result = await AdminService.checkIsValidForgetActivationCode(req.body);
+const deleteUser = catchAsync(async (req, res) => {
+  const email = req.params.email;
+  const result = await AdminService.deleteUser(email);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Success!",
+    message: "User deleted successfully",
     data: result,
   });
 });
 
+
+const deleteDriver = catchAsync(async (req, res) => {
+  const email = req.params.email;
+  const result = await AdminService.deleteDriver(email);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Driver deleted successfully",
+    data: result,
+  });
+});
+ 
+
 const AdminController = {
-  createUser,
-  getAllUsers,
-  getSingleUser,
-  deleteUser,
-  registrationUser,
-  login,
-  changePassword,
-  refreshToken,
-  updateAdmin,
-  getAllAdmin,
-  myProfile,
-  forgotPass,
-  resetPassword,
-  deleteAdmin,
-  checkIsValidForgetActivationCode,
+  updateProfile,
+  getAllUsers, 
+  deleteUser, 
+  getAllAdmins,
+  myProfile, 
+  deleteAdmin, 
+  approveAdmins,
+  approveDriver,
+  getAllDriver,
+  deleteDriver,
+  getAllRequestDrivers,
+  getAllRequestAdmin,
+  getDriverDetails,
+  blockUnblockUserDriver,
+  declineDriver
 };
 
 module.exports = { AdminController };

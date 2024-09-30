@@ -3,10 +3,18 @@ const { ENUM_NOTIFICATION_TYPE } = require("../../../utils/enums");
 
 const notificationSchema = new Schema(
   {
-    jobId: {
+    orderId: {
       type: Schema.Types.ObjectId,
-      required: true,
+      // required: true,
       ref: "Job",
+    },
+    userId: {
+      type: String, 
+      ref: "User",
+    },
+    driverId: {
+      type: String, 
+      ref: "Driver",
     },
     title: {
       type: String,
@@ -15,11 +23,7 @@ const notificationSchema = new Schema(
     message: {
       type: String,
       required: true,
-    },
-    receiverId: {
-      type: String,
-      required: true,
-    },
+    }, 
     otp: {
       type: Number,
       default: null,
@@ -27,12 +31,7 @@ const notificationSchema = new Schema(
     seen: {
       type: Boolean,
       default: false,
-    },
-    type: {
-      type: String,
-      enum: Object.values(ENUM_NOTIFICATION_TYPE),
-      required: true,
-    },
+    }, 
   },
   {
     timestamps: true,
