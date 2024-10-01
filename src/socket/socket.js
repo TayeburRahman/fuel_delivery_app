@@ -2,6 +2,7 @@ const express = require('express');
 const handleChat = require('./chat/chat');
 const { ENUM_SOCKET_EVENT } = require('../utils/enums');
 const {handleNotification} = require('../app/modules/notification/notification.service');
+const { handleDriverData } = require('../app/modules/driver/driver.socket');
 
  
 // Set to keep track of online users
@@ -19,8 +20,11 @@ const socket = async (io) => {
     onlineUsers.add(currentUserId);
     io.emit("onlineUser", Array.from(onlineUsers));
 
-    // Handle notifications
+    // Handle notifications events
     await handleNotification(currentUserId, role, socket, io);
+
+    // Handle driver events
+    await handleDriverData(currentUserId, role, socket, io)
 
     // Handle chat functionality (uncomment if needed)
     // handleChat(io, socket, currentUserId, onlineUsers);

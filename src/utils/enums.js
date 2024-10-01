@@ -23,7 +23,7 @@ const ENUM_SOCKET_EVENT = {
   MESSAGE_NEW: "new-message",
   MESSAGE_GETALL: "message",
   CONVERSION: "conversion", 
-  
+  DRIVER_LOCATION: "driver-location",  
   
 };
 
