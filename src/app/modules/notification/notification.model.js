@@ -24,10 +24,10 @@ const notificationSchema = new Schema(
       type: String,
       required: true,
     }, 
-    otp: {
-      type: Number,
-      default: null,
-    },
+    // otp: {
+    //   type: Number,
+    //   default: null,
+    // },
     seen: {
       type: Boolean,
       default: false,

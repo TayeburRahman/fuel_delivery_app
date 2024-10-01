@@ -17,6 +17,7 @@ const Auth = require("./auth.model");
 const User = require("../user/user.model");
 const Admin = require("../admin/admin.model");
 const Driver = require("../driver/driver.model");
+const { sendNotification, emitNotification } = require("../notification/notification.service");
 
 
 // Create activation token -done
@@ -199,6 +200,15 @@ const activateAccount = async (payload) => {
   } else {
     throw new ApiError(400, "Invalid role provided!");
   }
+
+    if(existUser.role === ENUM_USER_ROLE.USER || existUser.role === ENUM_USER_ROLE.DRIVER){
+      await sendNotification(
+        'Welcome! Our Fuel Delivery App.',
+        `Hi ${result.name}, your account has been created successfully.`,
+         existUser.role === ENUM_USER_ROLE.USER  &&  result._id,  //userId
+         existUser.role === ENUM_USER_ROLE.DRIVER &&  result._id, //driverId 
+      );  
+    }
 
   const accessToken = jwtHelpers.createToken(
     {

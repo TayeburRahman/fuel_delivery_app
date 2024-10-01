@@ -18,11 +18,12 @@ const ENUM_JOB_STATUS = {
 const ENUM_SOCKET_EVENT = {
   CONNECT: "connection",
   NOTIFICATION: "notification",
-  MESSAGE_NEW: "new-message",
-  MESSAGE_GETALL: "getall-message",
-  CONVERSION: "conversion", 
-  SEEN_NOTIFICATION: "seen-notification",
   NEW_NOTIFICATION: "new-notification",
+  SEEN_NOTIFICATION: "seen-notification",
+  MESSAGE_NEW: "new-message",
+  MESSAGE_GETALL: "message",
+  CONVERSION: "conversion", 
+  
   
 };
 

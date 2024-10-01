@@ -35,21 +35,14 @@ router.get("/history_driver",
     auth(ENUM_USER_ROLE.USER),  
     orderController.userOrderHistory);
 
-   
+    router.get("/transactions/:driverId", 
+      auth(ENUM_USER_ROLE.DRIVER),  
+      orderController.userOrderHistory);
 
-
-   
-
-   
-
-
+      router.get("/transactions/wallet/:driverId", 
+        auth(ENUM_USER_ROLE.DRIVER),  
+        orderController.driverTransactionHistory);
  
- 
-router.patch(
-  "/confirm-order/:orderId",
-  auth(ENUM_USER_ROLE.USER),
-  orderController.confirmTripByUser
-);
-
+       
 // router.post("/complete-destination/:orderId");
 module.exports = router;

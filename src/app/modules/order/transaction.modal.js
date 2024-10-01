@@ -22,15 +22,15 @@ const transactionSchema = new Schema({
     type: Date,
     required: true,
   },
-  transactionType: {
+  type: {
     type: String,
     required: true, 
-    enum: [ "pay-order", "delivery-fee" ],
+    enum: [ "pay-order", "send-driver-fee" ],
   },
-  totalAmount: {
-    type: String,
+  amount: {
+    type: Number,
     required: true, 
-  },   
+  }, 
   payment: {
     type: String, 
     enum: [ "stripe",  "bank",   ],

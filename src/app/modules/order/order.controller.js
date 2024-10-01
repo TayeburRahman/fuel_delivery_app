@@ -60,9 +60,7 @@ const acceptOrder = catchAsync(async (req, res) => {
  
 // update the trip status----------------------------------
 const updateDriverByOrderStatus = catchAsync(async (req, res) => {
-  const orderId = req.params.orderId;
-  const status = req.body.status;
-  const result = await orderService.updateDriverByOrderStatus(orderId, status);
+  const result = await orderService.updateDriverByOrderStatus(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -72,7 +70,7 @@ const updateDriverByOrderStatus = catchAsync(async (req, res) => {
 });
 
 // driver order history ---------------------
-const driverOrderHistory = catchAsync(async (req, res) => {;
+const driverOrderHistory = catchAsync(async (req, res) => {
   const result = await orderService.driverOrderHistory(req);
   sendResponse(res, {
     statusCode: 200,
@@ -83,7 +81,7 @@ const driverOrderHistory = catchAsync(async (req, res) => {;
 });
 
 // driver order history ---------------------
-const userOrderHistory = catchAsync(async (req, res) => {;
+const userOrderHistory = catchAsync(async (req, res) => {
   const result = await orderService.userOrderHistory(req);
   sendResponse(res, {
     statusCode: 200,
@@ -93,32 +91,46 @@ const userOrderHistory = catchAsync(async (req, res) => {;
   });
 });
 
- 
-
-const confirmTripByUser = catchAsync(async (req, res) => {
-  const orderId = req?.params?.orderId;
-  const doctorId = req?.body?.doctorId;
-  const result = await orderService.confirmTripByUser(orderId, doctorId);
+// driver order history ---------------------
+const driverTransitionHistory = catchAsync(async (req, res) => {
+  const result = await orderService.driverTransitionHistory(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "trip confirmed successfully",
+    message: "Driver transitionHistory history get successfully",
+    data: result,
+  });
+});
+
+// driver order history ---------------------
+const driverTransactionHistory = catchAsync(async (req, res) => {
+  const result = await orderService.driverTransactionHistory(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Driver transitionHistory history get successfully",
     data: result,
   });
 });
 
  
 
+ 
+
+ 
+ 
+
 const orderController = {
   createOrder,
   getOrderForTrip, 
   getSingleOrderDetails,
-  updateDriverByOrderStatus,
-  confirmTripByUser,
+  updateDriverByOrderStatus, 
   acceptOrder,
   cancelOrder,
   driverOrderHistory,
-  userOrderHistory
+  userOrderHistory,
+  driverTransitionHistory,
+  driverTransactionHistory
 };
 
 module.exports = { orderController };
