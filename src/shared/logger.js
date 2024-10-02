@@ -1,6 +1,7 @@
 const path = require('path');
 const { createLogger, format, transports } = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
+const config = require('../config');
 
 const { combine, timestamp, label, printf } = format;
 
@@ -19,7 +20,7 @@ const logDir = path.join(process.cwd(), 'logs', 'winston');
 // Logger for general information
 const logger = createLogger({
   level: 'info',
-  format: combine(label({ label: 'Dental Desh' }), timestamp(), myFormat),
+  format: combine(label({ label: config.app_name }), timestamp(), myFormat),
   transports: [
     new transports.Console(),
     new transports.File({
@@ -40,7 +41,7 @@ const logger = createLogger({
 // Logger for errors
 const errorLogger = createLogger({
   level: 'error',
-  format: combine(label({ label: 'Dental Desh' }), timestamp(), myFormat),
+  format: combine(label({ label: config.app_name }), timestamp(), myFormat),
   transports: [
     new transports.Console(),
     new DailyRotateFile({

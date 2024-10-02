@@ -1,8 +1,8 @@
-const express = require('express'); 
-const handleChat = require('./chat/chat');
+const express = require('express');  
 const { ENUM_SOCKET_EVENT } = require('../utils/enums');
 const {handleNotification} = require('../app/modules/notification/notification.service');
 const { handleDriverData } = require('../app/modules/driver/driver.socket');
+const { handleMessageData } = require('../app/modules/message/meassage.socket');
 
  
 // Set to keep track of online users
@@ -19,6 +19,9 @@ const socket = async (io) => {
     // Add the user to the online users set
     onlineUsers.add(currentUserId);
     io.emit("onlineUser", Array.from(onlineUsers));
+
+    // Handle massage events
+    await handleMessageData(currentUserId, role, socket, io)
 
     // Handle notifications events
     await handleNotification(currentUserId, role, socket, io);

@@ -1,5 +1,5 @@
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
-const Order = require("../order/order.modal");
+const Order = require("../order/order.model");
 const Driver = require("./driver.model"); 
 
 

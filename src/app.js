@@ -5,6 +5,7 @@ const routes = require('./app/routes');
 const NotFoundHandler = require('./errors/NotFoundHandler');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const config = require('./config');
 
 const app = express();
 
@@ -35,7 +36,7 @@ app.use('/', routes);
 
 // app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/', async (req, res) => {
-  res.json('Welcome to Dental dash');
+  res.json(`Welcome to ${config.app_name}`);
 });
 
 // Global Error Handler

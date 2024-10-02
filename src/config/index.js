@@ -20,6 +20,7 @@ const validateConfig = (config) => {
 // Define your configuration
 const config = {
   env: process.env.NODE_ENV,
+  app_name: process.env.APP_NAME,
   port: process.env.PORT,
   socket_port: process.env.SOCKET_PORT,
   base_url: process.env.BASE_URL,
@@ -43,11 +44,7 @@ const config = {
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.API_KEY,
     api_secret: process.env.API_SECRET,
-  },
-  sendgrid: {
-    from_email: process.env.FORM_EMAIL,
-    api_key: process.env.SEND_GRIDAPI_KEY,
-  },
+  }, 
   stripe: {
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
   },

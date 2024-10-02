@@ -1,6 +1,6 @@
 const httpStatus = require("http-status");
 const ApiError = require("../../../errors/ApiError");
-const Order = require("./order.modal");
+const Order = require("./order.model");
 const { ENUM_JOB_STATUS } = require("../../../utils/enums");
 const Transaction = require("./transaction.modal");
 const { sendNotification, emitNotification } = require("../notification/notification.service");
