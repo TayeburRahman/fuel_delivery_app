@@ -7,27 +7,27 @@ const { uploadFile } = require("../../middlewares/fileUploader");
 
 const router = Router();
 
- 
 
-router.post("/stripe_bank/create/:id", 
-  auth(ENUM_USER_ROLE.DRIVER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
-  uploadFile(), 
+
+router.post("/stripe_bank/create/:id",
+  auth(ENUM_USER_ROLE.DRIVER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  uploadFile(),
   PaymentController.createConnectedAccountWithBank)
 
-  router.patch("/stripe_bank/update/:id", 
-    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
-    uploadFile(), 
-    PaymentController.updateConnectedAccountWithBank)
+router.patch("/stripe_bank/update/:id",
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  uploadFile(),
+  PaymentController.updateConnectedAccountWithBank)
 
-    router.patch("/stripe_bank/transfers/:orderId", 
-      auth( ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),  
-      PaymentController.TransferBallance)
+router.patch("/stripe_bank/transfers/:orderId",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  PaymentController.TransferBallance)
 
-     
 
-   
 
- // router.post("/create-payment-intent",
+
+
+// router.post("/create-payment-intent",
 //   PaymentController.createPaymentIntent);
 
 // router.post(
