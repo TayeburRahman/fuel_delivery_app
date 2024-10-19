@@ -4,6 +4,7 @@ const fs = require("fs");
 const uploadFile = () => {
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
+ 
       let uploadPath = "";
 
       if (
@@ -13,6 +14,8 @@ const uploadFile = () => {
         uploadPath = 'uploads/images/licenses';
       } else if (file.fieldname === 'image') {
         uploadPath = 'uploads/images/image';
+      } else if (file.fieldname === 'kycFront' || file.fieldname === 'kycBack') {
+        uploadPath = 'uploads/images/kyc';
       } else if (file.fieldname === 'profile_image') {
         uploadPath = 'uploads/images/profile';
       } else if (file.fieldname === 'video') {
@@ -57,6 +60,8 @@ const uploadFile = () => {
         'licenseBackImage',
         'licenseFrontImage',
         'video_thumbnail',
+        'kycFront',
+        'kycBack'
       ];
 
     if (file.fieldname === undefined) {
@@ -89,6 +94,10 @@ const uploadFile = () => {
     { name: 'licenseBackImage', maxCount: 1 },
     { name: 'licenseFrontImage', maxCount: 1 },
     { name: 'profile_image', maxCount: 1 },
+    { name: 'kycFront', maxCount: 2 },
+    { name: 'kycBack', maxCount: 2 },
+
+     
   ]);
 
   return upload;

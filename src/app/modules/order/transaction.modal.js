@@ -27,7 +27,7 @@ const transactionSchema = new Schema({
     required: true, 
     enum: [ "pay-order", "send-driver-fee" ],
   },
-  amount: {
+  totalAmount: {
     type: Number,
     required: true, 
   }, 

@@ -10,9 +10,7 @@ const handleMessageData = async (receiverId, role, socket, io) => {
 
     //* Get one to one - all conversation messages
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_GETALL, async (data) => {
-        const { senderId, page } = data; 
-
-    console.log("hello", senderId, page)
+        const { senderId, page } = data;  
 
         const conversation = await Conversation.findOne({
             participants: { $all: [senderId, receiverId] },

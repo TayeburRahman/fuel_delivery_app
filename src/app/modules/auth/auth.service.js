@@ -34,9 +34,11 @@ const registrationAccount = async (req) => {
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
     throw new ApiError(400, "Valid Role is required!");
   }
+
   if (!password || !confirmPassword || !email) {
     throw new ApiError(400, "Email, Password, and Confirm Password are required!");
   }
+
   if (password !== confirmPassword) {
     throw new ApiError(400, "Password and Confirm Password didn't match");
   }
@@ -48,8 +50,8 @@ const registrationAccount = async (req) => {
 
   if (existingAuth && !existingAuth.isActive) {
     await Promise.all([
-      role === "USER" && User.deleteOne({ authId: existingAuth._id }),
-      role === "ADMIN" && Admin.deleteOne({ authId: existingAuth._id }),
+      existingAuth.role === "USER" && User.deleteOne({ authId: existingAuth._id }),
+      existingAuth.role === "ADMIN" && Admin.deleteOne({ authId: existingAuth._id }),
       Auth.deleteOne({ email }),
     ]);
   }
@@ -95,7 +97,6 @@ const registrationAccount = async (req) => {
 
   return { result, role, message: "Account created successfully!" }; // Adding a success message
 };
-
 
 const registrationDriverAccount = async (req) => {
   const { gender, role, password, confirmPassword, email, ...other } = req.body;
@@ -168,7 +169,6 @@ const registrationDriverAccount = async (req) => {
   
   return { result, role };
 };
- 
 
 // Activate user - done
 const activateAccount = async (payload) => {
@@ -193,7 +193,7 @@ const activateAccount = async (payload) => {
   let result = {} 
   if (existUser.role === ENUM_USER_ROLE.USER) {
     result = await User.findOne({ authId: existUser._id }); 
-  } else if (existUser.role === ENUM_USER_ROLE.ADMIN || ENUM_USER_ROLE.SUPER_ADMIN) {
+  } else if (existUser.role === ENUM_USER_ROLE.ADMIN || existUser.role === ENUM_USER_ROLE.SUPER_ADMIN) {
     result = await Admin.findOne({ authId: existUser._id }); 
   } else if (existUser.role === ENUM_USER_ROLE.DRIVER) {
     result = await Driver.findOne({ authId: existUser._id }); 

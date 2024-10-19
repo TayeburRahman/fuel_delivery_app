@@ -57,6 +57,19 @@ const acceptOrder = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+// current order driver
+const driverCurrentOrder = catchAsync(async (req, res) => {
+  const result = await orderService.driverCurrentOrder(req);
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "Order accepted successfully.",
+    data: result,
+  });
+});
+
+ 
  
 // update the trip status----------------------------------
 const updateDriverByOrderStatus = catchAsync(async (req, res) => {
@@ -130,7 +143,8 @@ const orderController = {
   driverOrderHistory,
   userOrderHistory,
   driverTransitionHistory,
-  driverTransactionHistory
+  driverTransactionHistory,
+  driverCurrentOrder
 };
 
 module.exports = { orderController };

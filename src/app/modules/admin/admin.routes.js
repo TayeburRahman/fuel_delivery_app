@@ -30,7 +30,6 @@ router.delete(
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   AdminController.deleteUser
 );
- 
 
 router.delete(
   "/delete_admin/:email",

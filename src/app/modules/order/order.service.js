@@ -13,7 +13,8 @@ const createOrderIntoDB = async (userId, payload) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Payment ID is required to create your order.");
   } else {
     payload.payment = "paid";
-  }
+  } 
+  
   const result = await Order.create(payload);
 
   const skippedTId = payload.stripId.slice(-10);
@@ -242,6 +243,20 @@ const updateDriverByOrderStatus = async (req) => {
 
 };
 
+// ----driver current trip   ----------- 
+const driverCurrentOrder  = async (req) => {
+  const { userId } = req.user;
+
+  console.log('driver current', userId);
+
+  const trips = await Order.find({ confirmedDriver: userId, status: "accepted" });
+
+  if (!trips || trips.length === 0) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No trip history found!");
+  }
+
+  return trips;
+};
 // ----driver trip history ----------- 
 const driverOrderHistory = async (req) => {
   const { userId } = req.user;
@@ -311,11 +326,14 @@ const driverTransactionHistory = async (req) => {
     date: { $gte: startOfSpecifiedMonth, $lte: endOfSpecifiedMonth }
   });
 
+  console.log("Transaction", transactions)
+
   if (!transactions || transactions.length === 0) {
     throw new ApiError(httpStatus.NOT_FOUND, "You have no history for this month!");
   }
   const currentMonthOfAmount = transactions.reduce((sum, transaction) => {
-    return sum + transaction.amount;
+    // console.log("===",  transaction.amount )
+    return sum + Number(transaction.totalAmount);
   }, 0);
 
   const currentMonth = format(startOfSpecifiedMonth, 'MMMM yyyy');
@@ -340,7 +358,8 @@ const orderService = {
   driverOrderHistory,
   userOrderHistory,
   driverTransitionHistory,
-  driverTransactionHistory
+  driverTransactionHistory,
+  driverCurrentOrder
 
 };
 
